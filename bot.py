@@ -6,7 +6,7 @@ import discord
 from discord import Embed, app_commands
 from discord.ext import commands
 from discord import colour
-from constants import (BOT_TOKEN, SUBTEAMS)
+from constants import (ADMIN_CHANNEL, BOT_TOKEN, SUBTEAMS)
 
 
 
@@ -23,11 +23,21 @@ async def on_ready():
 
 @bot.tree.command(name="log")
 async def log(interaction: discord.Interaction, subteam: str, time: int, description: str):
-    try:
-        Embed = discord.Embed(color = discord.Color.blue(), title = "Hour Logging", description =f"Sent hour request of {time} hours in {subteam} subteam for {interaction.user.name}. Description: {description}")
-        await interaction.response.send_message(embed = Embed)
-    except Exception as e:
-        print(e)
+        if (SUBTEAMS.count(subteam) != 0):
+            try: # attempt to send message to admin channel
+                channel = discord.Guild.get_channel(interaction.guild, ADMIN_CHANNEL)
+                rEmbed = discord.Embed(color = discord.Color.dark_blue(), title = "Hour Request", description =f"**{subteam}** hour request of **{time}** hour(s) from {interaction.user.name}.\nDescription: {description}")
+                await channel.send(embed = rEmbed) # keep ephemeral false
+            except Exception as e: # if fails, print error
+                print(e)
+                eEmbed = discord.Embed(color = discord.Color.red(), title = "Hour Logging", description =f"Failed to send hour request due to an error.\nError(s): \n{e}")
+                await interaction.response.send_message(embed = eEmbed, ephemeral = False)
+            else: # if succeeds, gives success message
+                sEmbed = discord.Embed(color = discord.Color.green(), title = "Hour Logging", description =f"Successfully sent hour request of **{time}** hour(s) in the {subteam} subteam for {interaction.user.name}.\nDescription: {description}")
+                await interaction.response.send_message(embed = sEmbed, ephemeral = False) #TODO set all ephemeral true after testing
+        else: # if subteam is invalid
+            uEmbed = discord.Embed(color = discord.Color.red(), title = "Hour Logging", description =f"Failed to send hour request because '{subteam}' is not a valid subteam.")
+            await interaction.response.send_message(embed = uEmbed, ephemeral = False) 
 
 @log.autocomplete("subteam")
 async def log_autocomplete(
