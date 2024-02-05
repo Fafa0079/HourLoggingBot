@@ -14,11 +14,6 @@ bot = commands.Bot(command_prefix="i", intents = discord.Intents.all())
 @bot.event
 async def on_ready():
     print("READY")
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print(e)
 
 @bot.tree.command(name="log", description= "Command used for logging hours.")
 @app_commands.describe(subteam= "Your subteam", time= "Hours spent", description= "Explanation of tasks")
