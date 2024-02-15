@@ -62,11 +62,11 @@ class EditHours(discord.ui.Modal, title="Edit Hours"):
     async def on_submit(self, interaction: discord.Interaction, time=time):
         # send google api request to add hours to spreadsheet
         sEmbed = discord.Embed(color = discord.Color.green(), title="Edit Hours", description=f"Sucessfully changed hours to {time} and submitted hour request.")
-        await interaction.edit(embed=sEmbed)
+        await interaction.response.edit_message(embed=sEmbed, view=None, delete_after=30)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None: 
         rEmbed = discord.Embed(color = discord.Color.red(), title="Edit Hours", description=f"Failed to change hours because of an error.\n\nError(s):\n\n{error}")
-        await interaction.edit(embed=rEmbed)
+        await interaction.response.edit_message(embed=rEmbed, view=None)
         traceback.print_exception(type(error), error, error.__traceback__)
 
 class DenyHours(discord.ui.Modal, title='Deny Hours'):
@@ -74,39 +74,34 @@ class DenyHours(discord.ui.Modal, title='Deny Hours'):
         label="Denial Reason",
         placeholder="Enter reason for denial here..."
     )
-    async def on_submit(self, interaction: discord.Interaction, reason):
+    async def on_submit(self, interaction: discord.Interaction, reason=reason):
         # send google api request to add hours to spreadsheet
         sEmbed = discord.Embed(color = discord.Color.green(), title="Edit Hours", description=f"Declined hour request.\nReason:\n{reason}")
-        await interaction.edit(embed=sEmbed)
+        await interaction.response.edit_message(embed=sEmbed, view=None, delete_after=30)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None: 
         rEmbed = discord.Embed(color = discord.Color.red(), title="Edit Hours", description=f"Failed to decline hours due of an error.\n\nError(s):\n\n{error}")
-        await interaction.edit(embed=rEmbed)
+        await interaction.response.edit_message(embed=rEmbed, view=None)
         traceback.print_exception(type(error), error, error.__traceback__)
 
 class VerifyHours(View):
-    def __init__(self):
-        super().__init__()
-
-        self.add_item(Button(label="Confirm", emoji="✅", style=ButtonStyle.green, custom_id="confirm"))
-        self.add_item(Button(label="Edit Hours", emoji="⚠", style=ButtonStyle.secondary, custom_id="edit"))
-        self.add_item(Button(label="Deny", emoji="⛔", style=ButtonStyle.red, custom_id="deny"))
-
-        @discord.ui.button(custom_id="confirm")
-        async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
-            # send google api request to add hours to spreadsheet
-            try:
-                cEmbed = discord.Embed(color=discord.Color.green(), title="Hour Request", description=f"Confirmed hour request.")
-                await interaction.response.edit(embed=cEmbed)
-            except Exception as e:
-                traceback.print_exception(type(e), e, e.__traceback__)
-        @discord.ui.button(custom_id="edit")
-        async def edit(self, button: discord.ui.Button, interaction: discord.Interaction):
-            await interaction.response.send_modal(EditHours())
+    @discord.ui.button(label="Confirm", style=ButtonStyle.green, custom_id="confirm", emoji="✅")
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # send google api request to add hours to spreadsheet
+        try:
+            cEmbed = discord.Embed(color=discord.Color.green(), title="Hour Request", description=f"Confirmed hour request.")
+            await interaction.response.edit_message(embed=cEmbed, view=None, delete_after=30)
+        except Exception as e:
+            traceback.print_exception(type(e), e, e.__traceback__)
+            rEmbed = discord.Embed(color = discord.Color.red(), title="Edit Hours", description=f"Failed to confirm hours due of an error.\n\nError(s):\n\n{e}")
+            await interaction.response.edit_message(embed=rEmbed, view=None)
+    @discord.ui.button(label="Edit", style=ButtonStyle.secondary, custom_id="edit", emoji="✏")
+    async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(EditHours())
         
-        @discord.ui.button(custom_id="deny")
-        async def deny(self, button: discord.ui.Button, interaction: discord.Interaction):
-            await interaction.respondse.send_modal(DenyHours())
+    @discord.ui.button(label="Deny", style=ButtonStyle.red, custom_id="deny", emoji="⛔")
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(DenyHours())
             
 
 @bot.tree.command(name="log", description= "Command used for logging hours.")
@@ -115,18 +110,18 @@ async def log(interaction: discord.Interaction, subteam: str, time: int, descrip
         if (SUBTEAMS.count(subteam) != 0):
             try: # attempt to send message to admin channel
                 rEmbed = discord.Embed(color = discord.Color.dark_blue(), title = "Hour Request", description =f"**User**\n{interaction.user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")
-                await discord.Guild.get_channel(interaction.guild, ADMIN_CHANNEL).send(embed = rEmbed, view=VerifyHours()) # keep ephemeral false
+                await discord.Guild.get_channel(interaction.guild, ADMIN_CHANNEL).send(embed = rEmbed, view=VerifyHours())
             except Exception as e: # if fails, print error
                 print(e)
-                eEmbed = discord.Embed(color = discord.Color.red(), title = "# Hour Logging", description =f"Failed to send hour request due to an error.\n\n**Error(s):**\n\n{e}")
-                await interaction.response.send_message(embed = eEmbed, ephemeral = False)
+                eEmbed = discord.Embed(color = discord.Color.red(), title = "Hour Logging", description =f"Failed to send hour request due to an error.\n\n**Error(s):**\n\n{e}")
+                await interaction.response.send_message(embed = eEmbed, ephemeral = True)
             else: # if succeeds, gives success message
-                sEmbed = discord.Embed(color = discord.Color.green(), title = "# Hour Logging", description =f"Successfully sent hour request!\n\n**User**\n{interaction.user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")
-                await interaction.response.send_message(embed = sEmbed, ephemeral = False) #TODO set all ephemeral true after testing
+                sEmbed = discord.Embed(color = discord.Color.green(), title = "Hour Logging", description =f"Successfully sent hour request!\n\n**User**\n{interaction.user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")
+                await interaction.response.send_message(embed = sEmbed, ephemeral = True)
                 return time
         else: # if subteam is invalid
-            uEmbed = discord.Embed(color = discord.Color.red(), title = "# Hour Logging", description =f"Failed to send hour request because '{subteam}' is not a valid subteam.")
-            await interaction.response.send_message(embed = uEmbed, ephemeral = False) 
+            uEmbed = discord.Embed(color = discord.Color.red(), title = "Hour Logging", description =f"Failed to send hour request because '{subteam}' is not a valid subteam.")
+            await interaction.response.send_message(embed = uEmbed, ephemeral = True) 
 
 @log.autocomplete("subteam")
 async def log_autocomplete(
