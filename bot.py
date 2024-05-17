@@ -1,3 +1,4 @@
+import gspread
 
 from datetime import datetime
 import traceback
@@ -7,7 +8,7 @@ import discord
 from discord import app_commands, ButtonStyle
 from discord.ext import commands
 from discord.ui import Button, View
-from constants import (ADMIN_CHANNEL, BOT_TOKEN, SUBTEAMS, GOOGLE_AUTH_LINK)
+from constants import (ADMIN_CHANNEL, BOT_TOKEN, SUBTEAMS, PROJECT_FILEPATH)
 
 
 bot = commands.Bot(command_prefix="i", intents = discord.Intents.all())
@@ -49,6 +50,69 @@ async def sync(ctx: commands.Context, guilds: commands.Greedy[discord.Object], s
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
     # | no params syncs all | ~ syncs guild | * syncs global commands to guild | ^ removes all commands from guild |
+class AddSubteam(discord.ui.Modal, title="Add Subteam"):
+    def __init__(self, gc, subteams):
+        super().__init__()
+        self.gc = gc
+        self.subteams = subteams
+    
+    subteam_name = discord.ui.TextInput(label="Subteam Name", placeholder="Enter the name of the subteam to add...")
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        self.subteams.append(self.subteam_name)
+        await interaction.response.edit_message(view=PlusMinus(self.gc, self.subteams))
+    
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None: 
+        rEmbed = discord.Embed(color = discord.Color.red(), title="Edit Hours", description=f"Failed to change hours due to an unexpected error.\n\nError(s):\n\n{error}")
+        await interaction.response.edit_message(embed=rEmbed, view=None)
+        traceback.print_exception(type(error), error, error.__traceback__)
+    
+class PlusMinus(View):
+    def __init__(self, gc, subteams):
+        super().__init__()
+        self.gc = gc
+        self.subteams = subteams
+        
+    @discord.ui.button(label="+", style=ButtonStyle.green, custom_id="plus")
+    async def plus(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AddSubteam(self.gc, self.subteams))
+        
+    @discord.ui.button(label="-", style=ButtonStyle.red, custom_id="minus")
+    async def minus(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.subteams.pop()
+        await interaction.response.edit_message(self.gc, self.subteams)
+        
+    @discord.ui.button(label="Next", style=ButtonStyle.primary, custom_id="next")
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(embed=self.pages[self.page], view=SetupPages(self.pages))
+
+class SetSheetName(discord.ui.Modal, title="Set Spreadsheet Name"):
+    def __init__(self, gc, pages):
+        super().__init__()
+        self.gc = gc
+        self.pages = pages
+        self.name = discord.ui.TextInput(label="Spreadsheet Name", placeholder="Enter a name for the spreadsheet...")
+        self.add_item(self.name)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # spreadsheet_name = self.name_input.value
+        # if spreadsheet_name:
+        await interaction.response.defer(thinking=True)
+        self.gc.create(str(self.name))
+        self.subteams = {}
+        sEmbed = discord.Embed(color=discord.Color.blue(), title="Add Subteams", description=f"Google Sheets document created with the name '{self.name}'! Now, please add all the subteams you want to be logged using the + button. **Please enter only one subteam at a time.**\n\nCurrent list: \n {self.subteams}\n\nIf you accidentally typed a subteam name wrong, or would like to remove a subteam, please press the - button.")
+        await interaction.followup.send(embed=sEmbed, view=PlusMinus(self.gc, self.subteams))
+        # else:
+        #     rEmbed = discord.Embed(color=discord.Color.red(), title="Error", description="Error: No spreadsheet name provided. Please insert a valid spreadsheet name.")
+        #     await interaction.response.edit_message(embed=rEmbed, view=SetupPages(self.pages))
+    
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None: 
+        rEmbed = discord.Embed(color = discord.Color.red(), title="Edit Hours", description=f"Failed to change hours due to an unexpected error.\n\nError(s):\n\n{error}")
+        await interaction.response.edit_message(embed=rEmbed, view=None)
+        traceback.print_exception(type(error), error, error.__traceback__)
+    
+        
+    
 class SetupPages(View):
     def __init__(self, pages):
         super().__init__()
@@ -73,7 +137,7 @@ class SetupPages(View):
         
     async def update_buttons(self):
         self.pageinfo.label = f"Step {self.page + 1}/{len(self.pages)}"
-        self.plus_button.disabled = self.page != 3
+        self.plus_button.disabled = self.page != 1
         self.prev_button.disabled = self.page == 0
         self.next_button.disabled = self.page == len(self.pages)-1
 
@@ -88,18 +152,26 @@ class SetupPages(View):
             await self.update_buttons()
             await interaction.response.edit_message(embed=self.pages[self.page], view=self)
     async def plus(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Placeholder", ephemeral=True)
+        if self.page == 1:
+            gc = gspread.oauth(
+                credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
+                authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
+                scopes="https://www.googleapis.com/auth/drive.file"               
+            )
+            await interaction.response.send_modal(SetSheetName(gc, self.pages))
+        else:
+            print("Placeholder")
+            
 
 @bot.tree.command(name="setup", description="Guided setup for hour logging.")
 @commands.has_permissions(administrator=True)
 async def setup(interaction: discord.Interaction):
     p1Embed = discord.Embed(color=discord.Color.blue(), title="Hour Logging Setup", description=f"Welcome to the hour logging setup, {interaction.user.display_name}! This guided setup will walk you through multiple steps to setup hour logging in your discord server. Listed here are the steps:\n1. Allow integration of discord bot w/ google sheets\n2. Add all subteams/groups\n3. Selection of admin channel to send hour logging approval messages\n4. Toggle use of /verify command")
-    p2Embed = discord.Embed(color=discord.Color.blue(), title="Google Sheets Integration", description=f"Please click [this link]({GOOGLE_AUTH_LINK}) to authorize the bot to create a Google Sheets document. Please do not move onto the next page before doing this or the bot will break and I will be sad D:")
-    p3Embed = discord.Embed(color=discord.Color.blue(), title="Add subteams/groups", description="placeholder")
-    p4Embed = discord.Embed(color=discord.Color.blue(), title="Create Sheets Document", description="Press the (+) button to create a new google sheets document!")
-    p5Embed = discord.Embed(color=discord.Color.blue(), title="Admin Channel Selection", description="placeholder")
-    p6Embed = discord.Embed(color=discord.Color.blue(), title= "Verify Command Usage", description="placeholder")
-    pages = [p1Embed, p2Embed, p3Embed, p4Embed, p5Embed, p6Embed]
+    p2Embed = discord.Embed(color=discord.Color.blue(), title="Google Sheets Integration", description=f"Press the (+) button to create a new google sheets document! You may be prompted to give permissions to the bot. Don't worry, you'll only have to grant permissions once!")
+    p3Embed = discord.Embed(color=discord.Color.blue(), title="Create Sheets Document", description="Press the (+) button to create a new google sheets document!")
+    p4Embed = discord.Embed(color=discord.Color.blue(), title="Admin Channel Selection", description="placeholder")
+    p5Embed = discord.Embed(color=discord.Color.blue(), title= "Verify Command Usage", description="placeholder")
+    pages = [p1Embed, p2Embed, p3Embed, p4Embed, p5Embed]
     try:
         await interaction.response.send_message(embed=p1Embed, view = SetupPages(pages), ephemeral=True)
     except Exception as e:
