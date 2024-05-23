@@ -1,5 +1,6 @@
 import gspread
 
+from pathlib import Path
 from datetime import datetime
 import traceback
 from typing import List, Literal, Optional
@@ -98,7 +99,7 @@ class SetSheetName(discord.ui.Modal, title="Set Spreadsheet Name"):
         # spreadsheet_name = self.name_input.value
         # if spreadsheet_name:
         await interaction.response.defer(thinking=True)
-        self.gc.create(str(self.name))
+        self.gc.create(str(self.name)) # Blocker, be aware. No other commands will work while this one is running. (bruh the async ver of this doesn't have oauth end user support :sob:)
         self.subteams = {}
         sEmbed = discord.Embed(color=discord.Color.blue(), title="Add Subteams", description=f"Google Sheets document created with the name '{self.name}'! Now, please add all the subteams you want to be logged using the + button. **Please enter only one subteam at a time.**\n\nCurrent list: \n {self.subteams}\n\nIf you accidentally typed a subteam name wrong, or would like to remove a subteam, please press the - button.")
         await interaction.followup.send(embed=sEmbed, view=PlusMinus(self.gc, self.subteams))
@@ -153,12 +154,20 @@ class SetupPages(View):
             await interaction.response.edit_message(embed=self.pages[self.page], view=self)
     async def plus(self, interaction: discord.Interaction):
         if self.page == 1:
-            gc = gspread.oauth(
-                credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
-                authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
-                scopes="https://www.googleapis.com/auth/drive.file"               
-            )
-            await interaction.response.send_modal(SetSheetName(gc, self.pages))
+            if not Path(fr"{PROJECT_FILEPATH}\authorized_user.json").exists():   
+                await interaction.response.defer()
+                gspread.oauth(
+                    credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
+                    authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
+                    scopes="https://www.googleapis.com/auth/drive.file"               
+                )
+            else:
+                gc = gspread.oauth(
+                    credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
+                    authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
+                    scopes="https://www.googleapis.com/auth/drive.file"               
+                )
+                await interaction.response.send_modal(SetSheetName(gc, self.pages))
         else:
             print("Placeholder")
             
