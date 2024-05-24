@@ -1,8 +1,7 @@
-# Hour Logging Bot (Minimal Edition)
-## IMPORTANT: This version is ONLY used for single server use, not for use over multiple discord servers
-A minimal version of a discord bot that manages logging hours.
+# Hour Logging Bot 
+A discord bot that manages logging hours.
 Integrates with Google Sheets to log hours to a spreadsheet from commands sent over discord.
-Currently WIP, does not work as intended currently
+Currently a WIP, not all features are implemented yet.
 ## Planned Features:
 - Use of Discord's new slash command system
 - /setup: Easy setup of the /log command for your discord. Administrators are led through a series of GUIs.
@@ -15,6 +14,7 @@ Currently WIP, does not work as intended currently
   - Add subteams/groups
   - Select hour approval channel
   - Toggle use of /verify
+  - Clear setup (Allows you to redo the setup process, clearing the previous one in the process.)
 - /verify: Add real name to hour logging. Togglable in /setup.
   - Will log your real name in the spreadsheet instead of the discord name if true in /setup
 - /log: Logs hours to the system. Three parameters: subteam/group, number of hours, description of work done. Message is sent to the selected hour approval channel. (selected in /setup)
@@ -24,3 +24,4 @@ Currently WIP, does not work as intended currently
     - Denying the hours will give you the option to provide a reason for the denial and the user who sent the request will be messaged with the reason.
   - After selecting an option, the embed will show the hours accepted/denied and for what person.
 - /hours: Lists the number of hours on each subteam/group. One parameter: discord user.
+  - May not be implemented if plans change
