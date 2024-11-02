@@ -48,7 +48,7 @@ class SetupPages(View):
     async def plus(self, interaction: discord.Interaction):
         if self.page == 1:
             if not Path(fr"{PROJECT_FILEPATH}\authorized_user.json").exists():   
-                await interaction.response.defer()
+                await interaction.response.defer() # blocker
                 gspread.oauth(
                     credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
                     authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
@@ -60,6 +60,7 @@ class SetupPages(View):
                     authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
                     scopes="https://www.googleapis.com/auth/drive.file"               
                 )
+    
                 await interaction.response.send_modal(modals.SetSheetName(gc, self.pages))
         else:
             print("Placeholder")
