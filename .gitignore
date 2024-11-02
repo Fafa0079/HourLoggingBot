@@ -1,0 +1,4 @@
+**/__pycache__
+*.db
+authorized_user.json
+credentials.json
