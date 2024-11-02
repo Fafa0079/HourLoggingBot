@@ -9,10 +9,10 @@ class AddSubteam(discord.ui.Modal, title="Add Subteam"):
         self.gc = gc
         self.subteams = subteams
     
-    subteam_name = discord.ui.TextInput(label="Subteam Name", placeholder="Enter the name of the subteam to add...")
+    subteam_name = discord.ui.TextInput(label="Subteam Name", placeholder="Enter the name of the subteam to add...", min_length=1, max_length=250)
     
     async def on_submit(self, interaction: discord.Interaction):
-        self.subteams.append(self.subteam_name)
+        self.subteams.append(self.subteam_name.value)
         await interaction.response.edit_message(view=views.PlusMinus(self.gc, self.subteams))
     
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None: 

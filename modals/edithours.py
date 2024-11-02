@@ -3,7 +3,8 @@ import discord
 class EditHours(discord.ui.Modal, title="Edit Hours"):
     time = discord.ui.TextInput(
         label="Hours",
-        placeholder="Enter new number of hours here...")
+        placeholder="Enter new number of hours here...",
+        min_length=1, max_length=10)
     
     async def on_submit(self, interaction: discord.Interaction):
         try:

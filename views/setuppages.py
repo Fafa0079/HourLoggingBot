@@ -34,6 +34,7 @@ class SetupPages(View):
         self.plus_button.disabled = self.page != 1
         self.prev_button.disabled = self.page == 0
         self.next_button.disabled = self.page == len(self.pages)-1
+        self.next_button.disabled = self.page == 1
 
     async def prev(self, interaction: discord.Interaction):
         if self.page > 0:
@@ -45,6 +46,7 @@ class SetupPages(View):
             self.page += 1
             await self.update_buttons()
             await interaction.response.edit_message(embed=self.pages[self.page], view=self)
+            
     async def plus(self, interaction: discord.Interaction):
         if self.page == 1:
             if not Path(fr"{PROJECT_FILEPATH}\authorized_user.json").exists():   

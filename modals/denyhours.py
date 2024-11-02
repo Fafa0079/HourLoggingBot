@@ -9,7 +9,8 @@ class DenyHours(discord.ui.Modal, title='Deny Hours'):
         self.subteam = subteam
     reason = discord.ui.TextInput(
         label="Denial Reason",
-        placeholder="Enter reason for denial here..."
+        placeholder="Enter reason for denial here...",
+        min_length=1, max_length=100
     )
     async def on_submit(self, interaction: discord.Interaction):
         sEmbed = discord.Embed(color = discord.Color.green(), 
