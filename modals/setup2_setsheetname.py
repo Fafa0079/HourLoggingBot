@@ -19,7 +19,7 @@ class SetSheetName(discord.ui.Modal, title="Set Spreadsheet Name"):
         spreadsheet_url = spreadsheet.url
         sEmbed = discord.Embed(color=discord.Color.blue(), 
                                title="Select Hour Approval Channel", 
-                               description=f"Google Sheets document created with the name '{self.name.value}'! \n\nLink to spreadsheet: {spreadsheet_url} \n\n Now, please select an output channel for hour logging requests to be set to. It is highly recommended to make this an administrator-only channel, as people who can access this channel can accept or deny any hour logging request.")
+                               description=f"Google Sheets document created with the name '{self.name.value}'! \n\nLink to spreadsheet: {spreadsheet_url} \n\n Now, please select an output channel for hour logging requests to be set to. **It is highly recommended to make this an administrator-only channel, as anyone who can access this channel can accept or deny any hour logging request.**")
         await interaction.followup.edit_message(message_id=message_id, embed=sEmbed, view=views.AdminChannel(self.gc, spreadsheet_url))
         await interaction.delete_original_response()
     

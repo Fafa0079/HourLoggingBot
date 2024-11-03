@@ -6,10 +6,10 @@ Currently a WIP, not all features are implemented yet.
 - Use of Discord's new slash command system
 - /setup: Easy setup of the /log command for your discord. Administrators are led through a series of GUIs.
     1. Allow integration of discord bot w/ google sheets
-    1. Add all subteams/groups
     1. Select hour approval channel (or allow the bot to create one for you)
     1. Select log channel (where all instances of hour logging will be logged)
-    1. Select whether the /verify command is required before logging hours (If false, will log discord username instead of real name)
+    1. Select whether the /verify command is required before logging hours (If true, will log real name alongside discord name)
+    1. Add all subteams/groups
 - /setup config: Allows you to configure settings of previously created logging systems created through /setup
   - Add subteams/groups
   - Select hour approval channel
