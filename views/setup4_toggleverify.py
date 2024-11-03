@@ -37,7 +37,7 @@ class ToggleVerify(View):
                                             sheet(server_id INTEGER, sheet_link TEXT, admin_channel INTEGER, verify_required INTEGER)''')
 
                     # Insert a row of data
-                    await cursor.execute("REPLACE INTO sheet VALUES (?, ?, ?, ?)", (interaction.guild_id, spreadsheet_url, self.admin_channel.id, verifyRequired))
+                    await cursor.execute("REPLACE INTO sheet VALUES (?, ?, ?, ?)", (interaction.guild_id, spreadsheet_url, self.admin_channel_id, verifyRequired))
 
                     # Save (commit) the changes
                     await conn.commit()
