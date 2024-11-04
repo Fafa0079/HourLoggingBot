@@ -21,12 +21,12 @@ class ToggleVerify(View):
     @discord.ui.button(label="✅", style=ButtonStyle.green, custom_id="confirm")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_server_table(interaction=interaction, spreadsheet_url=self.spreadsheet_url, verifyRequired=1)
-        await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams))
+        await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams, self.spreadsheet_url))
         
     @discord.ui.button(label="❌", style=ButtonStyle.red, custom_id="decline")
     async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_server_table(interaction=interaction, spreadsheet_url=self.spreadsheet_url, verifyRequired=0)
-        await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams))
+        await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams, self.spreadsheet_url))
         
     async def create_server_table(self, interaction: discord.Interaction, spreadsheet_url, verifyRequired):
         try:
