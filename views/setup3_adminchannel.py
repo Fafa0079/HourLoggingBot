@@ -24,6 +24,6 @@ class AdminChannel(View):
         self.admin_channel_id = selected_channel.id
         
         sEmbed = discord.Embed(color=discord.Color.blue(), 
-                               title="Add Subteams", 
+                               title="Verify Command Usage", 
                                description=f"Hour approval channel *#{self.admin_channel.name}* selected! Now, please specify if you want to require users to *verify* with their first and last name before being able to log hours. First and last names will be displayed in the Google Sheets document if required.\n\n✅** = required**\n❌** = not required**")
         await interaction.response.edit_message(embed=sEmbed, view=views.ToggleVerify(self.gc, self.subteams, self.spreadsheet_url, self.admin_channel_id))

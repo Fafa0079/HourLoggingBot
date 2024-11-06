@@ -20,8 +20,16 @@ class ToggleVerify(View):
         
     @discord.ui.button(label="✅", style=ButtonStyle.green, custom_id="confirm")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.create_server_table(interaction=interaction, spreadsheet_url=self.spreadsheet_url, verifyRequired=1)
-        await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams, self.spreadsheet_url))
+        try:
+            await self.create_server_table(interaction=interaction, spreadsheet_url=self.spreadsheet_url, verifyRequired=1)
+        except Exception as e:
+            rEmbed = discord.Embed(color=discord.Color.red(), 
+                               title="Database Error", 
+                               description=f"An error has occured with the database. Please contact the bot creator. \n\nDatabase Error: {e}")
+            print(f"Database error: {e}")
+            await interaction.response.edit_message(embed=rEmbed, view=None)
+        else:
+            await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams, self.spreadsheet_url))
         
     @discord.ui.button(label="❌", style=ButtonStyle.red, custom_id="decline")
     async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -29,17 +37,17 @@ class ToggleVerify(View):
         await interaction.response.edit_message(embed=self.sEmbed, view=views.PlusMinus(self.gc, self.subteams, self.spreadsheet_url))
         
     async def create_server_table(self, interaction: discord.Interaction, spreadsheet_url, verifyRequired):
-        try:
-            async with asqlite.connect('serverlist.db') as conn:
-                async with conn.cursor() as cursor:
-                    # Create table
-                    await cursor.execute('''CREATE TABLE IF NOT EXISTS
-                                            sheet(server_id INTEGER, sheet_link TEXT, admin_channel INTEGER, verify_required INTEGER)''')
+        async with asqlite.connect('serverlist.db') as conn:
+            async with conn.cursor() as cursor:
+                # Create table if table does not exist
+                await cursor.execute('''CREATE TABLE IF NOT EXISTS
+                                        sheet(server_id INTEGER, sheet_link TEXT, admin_channel INTEGER, verify_required INTEGER)''')
+                
+                # Delete existing entries from table
+                await cursor.execute('DELETE FROM sheet WHERE server_id=?', (interaction.guild_id))
 
-                    # Insert a row of data
-                    await cursor.execute("REPLACE INTO sheet VALUES (?, ?, ?, ?)", (interaction.guild_id, spreadsheet_url, self.admin_channel_id, verifyRequired))
+                # Insert a row of data
+                await cursor.execute("REPLACE INTO sheet VALUES (?, ?, ?, ?)", (interaction.guild_id, spreadsheet_url, self.admin_channel_id, verifyRequired))
 
-                    # Save (commit) the changes
-                    await conn.commit()
-        except Exception as e:
-            print(f"Database error: {e}")
+                # Save (commit) the changes
+                await conn.commit()
