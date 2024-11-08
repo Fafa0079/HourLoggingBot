@@ -12,7 +12,7 @@ import discord
 from discord import app_commands, ButtonStyle
 from discord.ext import commands
 from discord.ui import Button, View
-from constants import (ADMIN_CHANNEL, BOT_TOKEN, SUBTEAMS, PROJECT_FILEPATH)
+from constants import (ADMIN_CHANNEL, BOT_TOKEN, SUBTEAMS)
 
 
 bot = commands.Bot(command_prefix="-", intents = discord.Intents.all())
@@ -74,36 +74,41 @@ async def setup(interaction: discord.Interaction):
 @bot.tree.command(name="log", description= "Command used for logging hours.")
 @app_commands.describe(subteam= "Your subteam", time= "Hours spent", description= "Explanation of tasks")
 async def log(interaction: discord.Interaction, subteam: str, time: float, description: str):
-    if (SUBTEAMS.count(subteam) != 0):
-        if time > 0:
-            try: # attempt to send message to admin channel
-                user = interaction.user
-                rEmbed = discord.Embed(color = discord.Color.dark_blue(), 
-                                       title = "Hour Request", 
-                                       description =f"**User**\n{user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")# extra spacing to make it look nice
-                await discord.Guild.get_channel(interaction.guild, ADMIN_CHANNEL).send(embed = rEmbed, view=VerifyHours(time, user, subteam))
-            except Exception as e: # if fails, print error
-                print(e)
-                eEmbed = discord.Embed(color = discord.Color.red(), 
-                                       title = "Hour Logging", 
-                                       description =f"Failed to send hour request due to an unexpected error.\n\n**Error(s):**\n\n{e}")
-                await interaction.response.send_message(embed = eEmbed, ephemeral = True)
-            else: # if succeeds, gives success message
-                sEmbed = discord.Embed(color = discord.Color.green(), 
-                                       title = "Hour Logging", 
-                                       description =f"Successfully sent hour request!\n\n**User**\n{interaction.user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")
-                await interaction.response.send_message(embed = sEmbed, ephemeral = True)
-        else:
-            rEmbed = discord.Embed(color=discord.Color.red(), 
-                                   title="Edit Hours", 
-                                   description=f"Error: Cannot log a number of {time} hours. Please input a positive and valid number.")
-            await interaction.response.send_message(embed=rEmbed)
-            
-    else: # if subteam is invalid
-        uEmbed = discord.Embed(color = discord.Color.red(), 
-                               title = "Hour Logging", 
-                               description =f"Failed to send hour request because '{subteam}' is not a valid subteam. Please input a valid subteam.")
-        await interaction.response.send_message(embed = uEmbed, ephemeral = True) 
+    if not await table_exists(interaction=interaction):
+        rEmbed = discord.Embed(color = discord.Color.red(), 
+            title = "Hour Logging", 
+            description =f"Failed to send hour request because server administrators have not set up hour logging yet. Please contact a server administrator.\n(tell them to use the `/setup` command)")
+        await interaction.response.send_message(embed = rEmbed) 
+        return
+    if not (SUBTEAMS.count(subteam) != 0):
+        rEmbed = discord.Embed(color = discord.Color.red(), 
+            title = "Hour Logging", 
+            description =f"Failed to send hour request because '{subteam}' is not a valid subteam. Please input a valid subteam.")
+        await interaction.response.send_message(embed = rEmbed, ephemeral = True) 
+        return
+    if not time > 0:
+        rEmbed = discord.Embed(color=discord.Color.red(), 
+            title="Hour Logging", 
+            description=f"Error: Cannot log a number of {time} hours. Please input a positive and valid number.")
+        await interaction.response.send_message(embed=rEmbed)
+        return
+    try: # attempt to send message to admin channel
+        user = interaction.user
+        rEmbed = discord.Embed(color = discord.Color.dark_blue(), 
+            title = "Hour Request", 
+            description =f"**User**\n{user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")# extra spacing to make it look nice
+        await discord.Guild.get_channel(interaction.guild, ADMIN_CHANNEL).send(embed = rEmbed, view=VerifyHours(time, user, subteam))
+    except Exception as e: # if fails, print error
+        print(e)
+        rEmbed = discord.Embed(color = discord.Color.red(), 
+            title = "Hour Logging", 
+            description =f"Failed to send hour request due to an unexpected error.\n\n**Error(s):**\n\n{e}")
+        await interaction.response.send_message(embed = rEmbed, ephemeral = True)
+    else: # if succeeds, gives success message
+        sEmbed = discord.Embed(color = discord.Color.green(), 
+            title = "Hour Logging", 
+            description =f"Successfully sent hour request!\n\n**User**\n{interaction.user.display_name}\n\n**Subteam**\n{subteam}\n\n**Time spent**\n{time} hour(s)\n\n**Tasks**\n{description}")
+        await interaction.response.send_message(embed = sEmbed, ephemeral = True)
 
 @log.autocomplete("subteam")
 async def log_autocomplete(
@@ -115,4 +120,13 @@ async def log_autocomplete(
         for subteam in SUBTEAMS if current.lower() in subteam.lower()
     ]
 
+async def table_exists(interaction: discord.Interaction):
+        async with asqlite.connect('bot_storage.db') as conn:
+            async with conn.cursor() as cursor:
+                
+                await cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name=?", (str(interaction.guild_id),))
+                exists = await cursor.fetchone()
+                
+                return exists[0] > 0
+                
 bot.run(BOT_TOKEN)

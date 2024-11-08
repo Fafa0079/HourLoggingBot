@@ -4,7 +4,6 @@ import discord
 from discord.ui import Button, View
 from discord import ButtonStyle
 import gspread
-from constants import PROJECT_FILEPATH
 from pathlib import Path
 
 class SetupPages(View):
@@ -49,17 +48,18 @@ class SetupPages(View):
             
     async def plus(self, interaction: discord.Interaction):
         if self.page == 1:
-            if not Path(fr"{PROJECT_FILEPATH}\authorized_user.json").exists():   
+            project_filepath = Path(__file__).parents[1]
+            if not Path(fr"{project_filepath}\authorized_user.json").exists():   
                 await interaction.response.defer() # blocker
                 gspread.oauth(
-                    credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
-                    authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
+                    credentials_filename=fr"{project_filepath}\credentials.json",
+                    authorized_user_filename=fr"{project_filepath}\authorized_user.json",
                     scopes="https://www.googleapis.com/auth/drive.file"               
                 )
             else:
                 gc = gspread.oauth(
-                    credentials_filename=fr"{PROJECT_FILEPATH}\credentials.json",
-                    authorized_user_filename=fr"{PROJECT_FILEPATH}\authorized_user.json",
+                    credentials_filename=fr"{project_filepath}\credentials.json",
+                    authorized_user_filename=fr"{project_filepath}\authorized_user.json",
                     scopes="https://www.googleapis.com/auth/drive.file"               
                 )
     
